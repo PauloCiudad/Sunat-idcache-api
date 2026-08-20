@@ -5,7 +5,7 @@
 El esquema se toma de `ORACLE_SCHEMA`; la tabla se llama `W_DETRACCIONES_AUTO`.
 
 ```sql
-CREATE TABLE z10.W_DETRACCIONES_AUTO (
+CREATE TABLE {schema}.[TABLE] (
     num_press             NUMBER,
     cod_usuario_sol       VARCHAR2(10),
     des_prov              VARCHAR2(110),
@@ -78,7 +78,7 @@ No existe `MERGE`, búsqueda previa ni clave de idempotencia. Repetir una fecha 
 ## Permisos mínimos
 
 ```sql
-GRANT SELECT, INSERT ON z10.W_DETRACCIONES_AUTO TO nombre_usuario;
+GRANT SELECT, INSERT ON {schema}.[TABLE] TO nombre_usuario;
 ```
 
 ## Verificación
@@ -91,10 +91,10 @@ npm run db:check
 ```sql
 SELECT COUNT(*) AS total,
        MAX(fec_crea) AS ultima_insercion
-FROM z10.W_DETRACCIONES_AUTO;
+FROM {schema}.[TABLE];
 
 SELECT *
-FROM z10.W_DETRACCIONES_AUTO
+FROM {schema}.[TABLE]
 ORDER BY fec_crea DESC
 FETCH FIRST 20 ROWS ONLY;
 ```
