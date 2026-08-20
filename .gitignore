@@ -1,0 +1,8 @@
+node_modules/
+.env/
+logs/
+resultados/
+playwright-report/
+static/
+error-sunat-*.png
+error-id-cache-*.png
