@@ -29,7 +29,7 @@
                                      +----------+-----------+
                                                 |
                                                 v
-                                   Z10.W_DETRACCIONES_AUTO
+                                        {schema}.[TABLE]
 ```
 
 ## Componentes

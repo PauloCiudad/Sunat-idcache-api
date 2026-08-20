@@ -2,7 +2,7 @@
 
 Servicio Node.js que inicia sesión en SUNAT con Clave SOL, obtiene el `idCache` de la sesión, consulta los pagos individuales de detracciones y los inserta en Oracle.
 
-La sincronización se ejecuta automáticamente a las 02:00, hora de Lima, y también puede iniciarse mediante una API HTTP protegida con `x-api-key`.
+La sincronización se ejecuta automáticamente a las 02:00 am, hora de Lima, y también puede iniciarse mediante una API HTTP protegida con `x-api-key`.
 
 ## Flujo principal
 
@@ -26,7 +26,7 @@ El proceso consulta una sola fecha por ejecución. La tarea programada usa la fe
 - Node.js 20 o posterior.
 - Acceso de red a gob.pe, SUNAT y Oracle.
 - Credenciales SOL válidas.
-- Un usuario Oracle con permiso de `INSERT` y `SELECT` sobre `Z10.W_DETRACCIONES_AUTO` (o el esquema configurado).
+- Un usuario Oracle con permiso de `INSERT` y `SELECT` sobre `{schema}.[TABLE]` (o el esquema configurado).
 - Chromium de Playwright instalado.
 
 ## Instalación rápida
@@ -92,7 +92,7 @@ Respuesta correcta típica:
 }
 ```
 
-> Este proyecto sólo hace `INSERT`. No hace `MERGE`, actualización ni deduplicación. Repetir una fecha puede crear filas duplicadas.
+> Este proyecto sólo hace `INSERT`. No hace `MERGE`, actualización ni deduplicación. Repetir una fecha puede crear filas duplicadas. OJO: Este insert es sobre una tabla work.
 
 ## Comandos
 
