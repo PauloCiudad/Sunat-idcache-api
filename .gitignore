@@ -6,4 +6,3 @@ playwright-report/
 static/
 error-sunat-*.png
 error-id-cache-*.png
-.env
