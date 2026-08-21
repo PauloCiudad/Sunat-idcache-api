@@ -25,7 +25,7 @@ export class SunatClient {
         fechaFin,
         tipoCuenta: 1,
         tipoConsulta: "pagosIndividuales",
-        periodo: "",
+        periodo: ""
         /*_: Date.now()*/
       },
       headers: {

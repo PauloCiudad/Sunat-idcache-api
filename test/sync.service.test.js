@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { currentDatePeru, SyncService } from "../src/sync/sync.service.js";
+import {
+  currentDatePeru,
+  previousDatePeru,
+  SyncService
+} from "../src/sync/sync.service.js";
 
 test("calcula la fecha usando America/Lima", () => {
   assert.equal(currentDatePeru(new Date("2026-08-20T04:30:00Z")), "19/08/2026");
+});
+
+test("calcula el día anterior usando la fecha calendario de Lima", () => {
+  assert.equal(previousDatePeru(new Date("2026-08-21T15:30:00Z")), "20/08/2026");
+  assert.equal(previousDatePeru(new Date("2026-01-01T15:30:00Z")), "31/12/2025");
+  assert.equal(previousDatePeru(new Date("2026-08-21T04:30:00Z")), "19/08/2026");
 });
 
 test("coordina auth, consulta e insert", async () => {
@@ -22,7 +32,7 @@ test("coordina auth, consulta e insert", async () => {
     repository: { insertMany: async rows => rows.length }
   });
 
-  const result = await service.syncToday("test");
+  const result = await service.syncPreviousDay("test");
   assert.equal(result.received, 2);
   assert.equal(result.inserted, 2);
   assert.equal(result.attempts, 1);

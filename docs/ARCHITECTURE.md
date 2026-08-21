@@ -78,6 +78,8 @@ Parámetros de negocio:
 | `tipoConsulta` | `pagosIndividuales` |
 | `periodo` | vacío |
 
+La ejecución predeterminada calcula el día anterior en `America/Lima` y lo usa en ambos parámetros de fecha. Una fecha manual explícita no se modifica.
+
 Headers particulares: `Idcache`, `Idformulario: *MENU*`, `Cookie`, `Origin` y `Referer`.
 
 Si `cod` está presente debe ser 200. `resultado` se trata como un arreglo; si no lo es, se considera vacío.

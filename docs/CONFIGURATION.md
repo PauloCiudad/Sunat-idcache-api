@@ -24,7 +24,7 @@ La aplicación carga `.env` al iniciar. Copie `.env.ejemplo`, complete sus valor
 | `ORACLE_POOL_MAX` | No | `5` | Conexiones máximas del pool. |
 | `ORACLE_POOL_INCREMENT` | No | `1` | Incremento del pool. |
 | `SYNC_CRON` | No | `0 2 * * *` | Expresión cron de la tarea diaria. |
-| `SYNC_TIMEZONE` | No | `America/Lima` | Zona horaria del scheduler y fecha actual. |
+| `SYNC_TIMEZONE` | No | `America/Lima` | Zona horaria del scheduler; la consulta predeterminada usa el día anterior. |
 | `SYNC_RETRIES` | No | `3` | Reintentos adicionales al intento inicial. |
 
 `SYNC_RETRIES=3` permite hasta 4 intentos totales. Cada reintento vuelve a autenticar, consulta SUNAT e intenta insertar.
@@ -60,4 +60,3 @@ SYNC_RETRIES=3
 ## Validación al arrancar
 
 El servidor no inicia si falta una variable obligatoria, si el esquema Oracle no es un identificador válido o si no puede crear el pool Oracle. Así se evita dejar una API activa pero incapaz de persistir datos.
-

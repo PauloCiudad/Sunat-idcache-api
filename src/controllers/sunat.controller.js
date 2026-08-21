@@ -10,7 +10,7 @@ export function createSunatController({ authService, syncService }) {
       try {
         const result = req.body?.date
           ? await syncService.syncDate(req.body.date, "manual")
-          : await syncService.syncToday("manual");
+          : await syncService.syncPreviousDay("manual");
         res.status(200).json(result);
       } catch (error) { next(error); }
     }

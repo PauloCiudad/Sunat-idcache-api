@@ -54,7 +54,7 @@ Las pruebas actuales verifican:
 - conversión del payload real de SUNAT;
 - normalización de valores vacíos y fechas;
 - cantidad total de intentos;
-- fecha actual en Lima;
+- fecha actual y día anterior en Lima, incluidos cambios de mes y año;
 - coordinación entre autenticación, cliente SUNAT y repositorio;
 - consulta manual de una fecha.
 
@@ -82,4 +82,3 @@ Las longitudes de texto se validan antes de abrir la transacción para producir 
 - El repositorio es el único que ejecuta SQL de detracciones.
 
 Mantener esos límites facilita probar cambios de SUNAT sin depender de Oracle y viceversa.
-

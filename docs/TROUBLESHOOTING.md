@@ -12,7 +12,7 @@ Revise, en este orden:
 4. Confirme que la respuesta pertenece al RUC autenticado.
 5. Pruebe la consulta en SUNAT con la misma sesión.
 
-La tarea de las 02:00 consulta el día que recién comienza; es válido que aún no existan pagos para esa fecha. Para recuperar el día anterior se debe llamar manualmente con esa fecha o cambiar de forma consciente la regla de negocio.
+La tarea de las 02:00 consulta el día anterior en Lima. Si devuelve cero, compruebe que SUNAT tenga movimientos para esa fecha y que la sesión corresponda al RUC esperado.
 
 ## SUNAT no respondió gestor-sesiones/recurso
 
@@ -79,4 +79,3 @@ Use `npm run db:ping` para separar problemas de conexión de problemas del flujo
 ## Se insertaron duplicados
 
 Es una consecuencia posible del diseño solicitado: sólo `INSERT`, sin `MERGE` ni deduplicación. Antes de volver a ejecutar una fecha, revise las filas ya confirmadas. La limpieza o una restricción única deben definirse como una operación separada y controlada.
-

@@ -27,7 +27,7 @@ SYNC_TIMEZONE=America/Lima
 SYNC_RETRIES=3
 ```
 
-A las 02:00 se calcula la fecha actual en Lima y se consulta desde esa misma fecha hasta esa misma fecha.
+A las 02:00 se calcula el día anterior en Lima. Esa fecha se envía tanto en `fechaInicio` como en `fechaFin`. Por ejemplo, la ejecución del 21/08/2026 consulta el 20/08/2026.
 
 `noOverlap` evita que la tarea cron se solape dentro del proceso. `SyncService` también comparte la ejecución activa si llega una llamada manual mientras otra sigue en curso.
 
@@ -84,4 +84,3 @@ Después de desplegar:
 - Permita salida HTTPS a gob.pe y dominios `sunat.gob.pe`.
 - Supervise `sync.failed` y ausencia de `sync.completed` después de las 02:00.
 - Rote la Clave SOL y `API_KEY` según la política de la organización.
-

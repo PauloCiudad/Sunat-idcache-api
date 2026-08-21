@@ -48,7 +48,7 @@ Este endpoint es sólo de diagnóstico. El valor es temporal y debe tratarse com
 
 ## POST /api/sunat/sync/today
 
-Autentica, consulta SUNAT e inserta los resultados en Oracle. Sin body o con `{}` usa la fecha actual de Lima. Para consultar otra fecha:
+Autentica, consulta SUNAT e inserta los resultados en Oracle. Sin body o con `{}` usa el día anterior a la fecha actual de Lima. Para consultar otra fecha:
 
 ```json
 {
@@ -79,6 +79,8 @@ Autentica, consulta SUNAT e inserta los resultados en Oracle. Sin body o con `{}
 
 Alias compatible de `/api/sunat/sync/today`. Acepta el mismo body y devuelve la misma respuesta.
 
+Los nombres de ambas rutas se conservan por compatibilidad. Aunque contienen `today` o `hoy`, si no se envía `date` consultan el día anterior.
+
 ## Errores
 
 Una clave ausente o incorrecta recibe HTTP 401. Los errores del flujo SUNAT u Oracle reciben HTTP 502:
@@ -92,4 +94,3 @@ Una clave ausente o incorrecta recibe HTTP 401. Los errores del flujo SUNAT u Or
 ```
 
 En `NODE_ENV=production` se omite `detail`. El error completo queda en stdout/stderr.
-

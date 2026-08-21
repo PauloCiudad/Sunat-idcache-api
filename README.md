@@ -19,7 +19,7 @@ Clave SOL -> Playwright -> idCache + cookies
                INSERT masivo + COMMIT en Oracle
 ```
 
-El proceso consulta una sola fecha por ejecución. La tarea programada usa la fecha actual de `America/Lima`; la API permite indicar otra fecha para pruebas o recuperaciones manuales.
+El proceso consulta una sola fecha por ejecución. La tarea programada usa el día anterior a la fecha actual de `America/Lima`; la API permite indicar otra fecha para pruebas o recuperaciones manuales.
 
 ## Requisitos
 
@@ -56,7 +56,7 @@ Comprobar que el servidor responde:
 Invoke-RestMethod http://localhost:4000/api/health
 ```
 
-Ejecutar la sincronización del día actual:
+Ejecutar la sincronización del día anterior (fecha predeterminada):
 
 ```powershell
 $headers = @{ "x-api-key" = "SU_API_KEY" }
@@ -114,4 +114,3 @@ Respuesta correcta típica:
 - [Desarrollo y pruebas](docs/DEVELOPMENT.md)
 - [Solución de problemas](docs/TROUBLESHOOTING.md)
 - [Seguridad](docs/SECURITY.md)
-

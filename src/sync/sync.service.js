@@ -13,6 +13,17 @@ export function currentDatePeru(now = new Date()) {
   return `${values.day}/${values.month}/${values.year}`;
 }
 
+export function previousDatePeru(now = new Date()) {
+  const [day, month, year] = currentDatePeru(now).split("/").map(Number);
+  const previous = new Date(Date.UTC(year, month - 1, day - 1));
+
+  return [
+    String(previous.getUTCDate()).padStart(2, "0"),
+    String(previous.getUTCMonth() + 1).padStart(2, "0"),
+    previous.getUTCFullYear()
+  ].join("/");
+}
+
 export class SyncService {
   constructor({ authService, sunatClient, repository }) {
     this.authService = authService;
@@ -21,8 +32,8 @@ export class SyncService {
     this.running = null;
   }
 
-  syncToday(trigger = "manual") {
-    return this.syncDate(currentDatePeru(), trigger);
+  syncPreviousDay(trigger = "manual") {
+    return this.syncDate(previousDatePeru(), trigger);
   }
 
   syncDate(date, trigger = "manual") {

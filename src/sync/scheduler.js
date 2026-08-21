@@ -5,7 +5,7 @@ import { logger } from "../infrastructure/logger.js";
 
 export function startScheduler(syncService) {
   const task = cron.schedule(env.sync.cron, () => {
-    syncService.syncToday("scheduled").catch(error => {
+    syncService.syncPreviousDay("scheduled").catch(error => {
       logger.error("scheduler.sync.failed", { message: error.message });
     });
   }, {
