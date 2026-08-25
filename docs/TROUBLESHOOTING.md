@@ -68,6 +68,8 @@ La aplicación hace `COMMIT` explícito después de `executeMany`.
 
 ## Errores ORA o NJS
 
+- `NJS-533` / `ORA-12660`: Oracle exige Native Network Encryption. Use `ORACLE_THICK_MODE=true` y configure un Instant Client compatible en `ORACLE_CLIENT_LIB_DIR`.
+- `DPI-1047`: no se pudo cargar el Instant Client; revise ruta, permisos y que Node.js y Oracle Client tengan la misma arquitectura.
 - `ORA-01017`: usuario o contraseña incorrectos.
 - `ORA-00942`: tabla inexistente para ese esquema o falta de privilegios.
 - `ORA-12899`: texto más largo que la columna; el repositorio también valida longitudes conocidas.

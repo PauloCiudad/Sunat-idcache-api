@@ -27,6 +27,7 @@ El proceso consulta una sola fecha por ejecución. La tarea programada usa el d�
 - Acceso de red a gob.pe, SUNAT y Oracle.
 - Credenciales SOL válidas.
 - Un usuario Oracle con permiso de `INSERT` y `SELECT` sobre `{schema}.[TABLE]` (o el esquema configurado).
+- Oracle Instant Client de 64 bits para ejecutar `node-oracledb` en Thick mode.
 - Chromium de Playwright instalado.
 
 ## Instalación rápida

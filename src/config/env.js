@@ -3,6 +3,11 @@ const integer = (value, fallback) => {
   return Number.isInteger(parsed) ? parsed : fallback;
 };
 
+const boolean = (value, fallback) => {
+  if (value === undefined || value === "") return fallback;
+  return value.toLowerCase() === "true";
+};
+
 export const env = Object.freeze({
   nodeEnv: process.env.NODE_ENV || "development",
   port: integer(process.env.PORT, 4000),
@@ -20,6 +25,9 @@ export const env = Object.freeze({
     user: process.env.ORACLE_USER,
     password: process.env.ORACLE_PASSWORD,
     connectString: process.env.ORACLE_CONNECT_STRING,
+    thickMode: boolean(process.env.ORACLE_THICK_MODE, true),
+    clientLibDir: process.env.ORACLE_CLIENT_LIB_DIR?.trim() || undefined,
+    clientConfigDir: process.env.ORACLE_CLIENT_CONFIG_DIR?.trim() || undefined,
     poolMin: integer(process.env.ORACLE_POOL_MIN, 1),
     poolMax: integer(process.env.ORACLE_POOL_MAX, 5),
     poolIncrement: integer(process.env.ORACLE_POOL_INCREMENT, 1),
@@ -54,5 +62,17 @@ export function validateEnv() {
 
   if (!/^[A-Z][A-Z0-9_$#]*$/i.test(env.oracle.schema)) {
     throw new Error("ORACLE_SCHEMA contiene un identificador inválido");
+  }
+
+  if (
+    env.oracle.poolMin < 0 ||
+    env.oracle.poolMax < 1 ||
+    env.oracle.poolIncrement < 1
+  ) {
+    throw new Error("La configuración del pool Oracle contiene valores inválidos");
+  }
+
+  if (env.oracle.poolMin > env.oracle.poolMax) {
+    throw new Error("ORACLE_POOL_MIN no puede ser mayor que ORACLE_POOL_MAX");
   }
 }

@@ -20,6 +20,9 @@ La aplicación carga `.env` al iniciar. Copie `.env.ejemplo`, complete sus valor
 | `ORACLE_PASSWORD` | Sí | — | Contraseña Oracle. |
 | `ORACLE_CONNECT_STRING` | Sí | — | Ejemplo: `host:1521/servicio`. |
 | `ORACLE_SCHEMA` | No | `Z10` | Propietario de `W_DETRACCIONES_AUTO`. |
+| `ORACLE_THICK_MODE` | No | `true` | Activa Thick mode, necesario para Native Network Encryption. |
+| `ORACLE_CLIENT_LIB_DIR` | Windows | — | Carpeta del Instant Client que contiene `oci.dll`. |
+| `ORACLE_CLIENT_CONFIG_DIR` | No | — | Carpeta opcional con `sqlnet.ora` o `tnsnames.ora`. |
 | `ORACLE_POOL_MIN` | No | `1` | Conexiones mínimas del pool. |
 | `ORACLE_POOL_MAX` | No | `5` | Conexiones máximas del pool. |
 | `ORACLE_POOL_INCREMENT` | No | `1` | Incremento del pool. |
@@ -48,6 +51,8 @@ ORACLE_USER=usuario
 ORACLE_PASSWORD=clave
 ORACLE_CONNECT_STRING=host:1521/servicio
 ORACLE_SCHEMA=Z10
+ORACLE_THICK_MODE=true
+ORACLE_CLIENT_LIB_DIR=C:\oracle\instantclient_19_28
 ORACLE_POOL_MIN=1
 ORACLE_POOL_MAX=5
 ORACLE_POOL_INCREMENT=1
