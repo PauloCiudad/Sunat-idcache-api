@@ -2,7 +2,7 @@
 
 Servicio Node.js que inicia sesión en SUNAT con Clave SOL, obtiene el `idCache` de la sesión, consulta los pagos individuales de detracciones y los inserta en Oracle.
 
-La sincronización se ejecuta automáticamente a las 02:00 am, hora de Lima, y también puede iniciarse mediante una API HTTP protegida con `x-api-key`.
+La sincronización se ejecuta automáticamente a las 05:00 y 16:00, hora de Lima, y también puede iniciarse mediante una API HTTP protegida con `x-api-key`.
 
 ## Flujo principal
 
@@ -17,9 +17,15 @@ Clave SOL -> Playwright -> idCache + cookies
                               |
                               v
                INSERT masivo + COMMIT en Oracle
+                              |
+                              v
+       Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO
+                              |
+                              v
+          Z10.LOG_PROCESO_DETRACCIONES -> respuesta
 ```
 
-El proceso consulta una sola fecha por ejecución. La tarea programada usa el día anterior a la fecha actual de `America/Lima`; la API permite indicar otra fecha para pruebas o recuperaciones manuales.
+El proceso consulta una sola fecha por ejecución. Las tareas programadas consultan ayer y las llamadas manuales consultan hoy, calculados en `America/Lima`.
 
 ## Requisitos
 
@@ -40,6 +46,8 @@ Copy-Item .env.ejemplo .env
 
 Complete `.env` con credenciales reales y valide Oracle:
 
+Antes de iniciar, el DBA debe crear la tabla de log con [este script](sql/001_log_proceso_detracciones.sql) y otorgar los permisos indicados allí. La aplicación no crea tablas automáticamente.
+
 ```powershell
 npm run db:ping
 npm run db:check
@@ -57,7 +65,7 @@ Comprobar que el servidor responde:
 Invoke-RestMethod http://localhost:4000/api/health
 ```
 
-Ejecutar la sincronización del día anterior (fecha predeterminada):
+Ejecutar la sincronización manual del día actual en Lima:
 
 ```powershell
 $headers = @{ "x-api-key" = "SU_API_KEY" }
@@ -68,23 +76,28 @@ Invoke-RestMethod -Method Post `
   -Body "{}"
 ```
 
-Ejecutar una fecha específica:
+No es necesario enviar `date`. Si se envía, sólo se acepta la fecha de hoy en `DD/MM/YYYY`; otra fecha responde HTTP 400 sin cargar datos.
+
+Consultar un rango histórico inclusivo:
 
 ```powershell
-$body = @{ date = "19/08/2026" } | ConvertTo-Json
+$body = @{ startDate = "01/09/2026"; endDate = "04/09/2026" } | ConvertTo-Json
 Invoke-RestMethod -Method Post `
-  -Uri http://localhost:4000/api/sunat/sync/today `
+  -Uri http://localhost:4000/api/sunat/sync/range `
   -Headers $headers `
   -ContentType "application/json" `
   -Body $body
 ```
+
+El rango genera una sola consulta SUNAT, un INSERT masivo, una llamada al package y una fila de log.
 
 Respuesta correcta típica:
 
 ```json
 {
   "ok": true,
-  "date": "19/08/2026",
+  "date": "2026/09/04 10:00:00",
+  "queryDate": "2026/09/04 00:00:00",
   "trigger": "manual",
   "received": 1,
   "inserted": 1,
@@ -93,7 +106,9 @@ Respuesta correcta típica:
 }
 ```
 
-> Este proyecto sólo hace `INSERT`. No hace `MERGE`, actualización ni deduplicación. Repetir una fecha puede crear filas duplicadas. OJO: Este insert es sobre una tabla work.
+`date` es la fecha/hora de ejecución, `queryDate` el día consultado y `durationMs` la duración de carga y procesamiento en milisegundos (antes de guardar el log). Las fechas de salida usan `YYYY/MM/DD HH24:MI:SS`, en Lima.
+
+> La carga a WORK sigue usando sólo `INSERT`, sin `MERGE`. Después, el package transfiere los registros, limpia **toda** la tabla WORK y confirma su propia transacción. `inserted` cuenta filas cargadas a WORK, no las filas que quedan allí ni las insertadas por el package en las tablas definitivas.
 
 ## Comandos
 

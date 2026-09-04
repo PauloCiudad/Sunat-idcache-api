@@ -45,6 +45,7 @@
 | `Scheduler` | Ejecuta la sincronización diaria con zona horaria de Lima. |
 | `DetraccionesMapper` | Convierte nombres, vacíos, fechas y números. |
 | `DetraccionesRepository` | Inserta el lote en una transacción Oracle. |
+| `ProcessLogRepository` | Persiste el resultado final en `Z10.LOG_PROCESO_DETRACCIONES`. |
 | `Logger` | Emite eventos JSON a stdout/stderr. |
 
 ## Autenticación SUNAT
@@ -78,7 +79,7 @@ Parámetros de negocio:
 | `tipoConsulta` | `pagosIndividuales` |
 | `periodo` | vacío |
 
-La ejecución predeterminada calcula el día anterior en `America/Lima` y lo usa en ambos parámetros de fecha. Una fecha manual explícita no se modifica.
+Las programadas (05:00 y 16:00 de Lima) consultan ayer; las manuales consultan hoy. Una fecha manual diferente de hoy se rechaza. Los parámetros SUNAT mantienen `DD/MM/YYYY`; las fechas expuestas en logs/respuestas usan `YYYY/MM/DD HH24:MI:SS`.
 
 Headers particulares: `Idcache`, `Idformulario: *MENU*`, `Cookie`, `Origin` y `Referer`.
 
@@ -88,19 +89,24 @@ Si `cod` está presente debe ser 200. `resultado` se trata como un arreglo; si n
 
 El repositorio ejecuta sólo `INSERT` con `executeMany`. Omite `usr_crea` y `fec_crea`. Toda la respuesta se confirma con un único `COMMIT` y cualquier error provoca `ROLLBACK`.
 
-No hay `MERGE`, deduplicación ni tabla `SUNAT_SYNC_LOG`.
+Después del COMMIT del lote se llama una sola vez a `Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO`. El package transfiere datos, limpia toda WORK y confirma su propia transacción. No se crea un trigger Oracle por fila.
+
+Después se guarda el resultado final en `Z10.LOG_PROCESO_DETRACCIONES`, con una transacción independiente, antes de responder HTTP. Un resultado sin filas también se registra, sin llamar al package. No hay `MERGE` en la API ni se usa `SUNAT_SYNC_LOG`.
 
 ## Concurrencia y fallos
 
-`SyncService` mantiene una única promesa activa por proceso. El scheduler usa además `noOverlap`. Esta exclusión no cubre múltiples procesos o servidores.
+`SyncService` mantiene una única promesa activa por proceso y rechaza otra ejecución simultánea. El scheduler usa además `noOverlap` y espera la promesa. Esta exclusión no cubre múltiples procesos o servidores.
 
-El reintento envuelve el flujo completo. Con tres reintentos hay cuatro intentos máximos. Los eventos de cada etapa permiten reconstruir el resultado sin persistir un log funcional en Oracle.
+El reintento envuelve autenticación, consulta y carga a WORK, no el package ni la escritura del log. Con tres reintentos hay cuatro intentos máximos. Una confirmación de INSERT incierta tampoco se reintenta. Esto evita duplicar cargas ya confirmadas por un error de una etapa posterior.
+
+`date` y la columna `DIA` indican fecha/hora real de ejecución en Lima; `queryDate` conserva el día consultado a medianoche. El log guarda `true`/`false`, trigger, contadores, duración y detalles tanto en éxito como en error.
 
 ## Interfaces
 
 - `GET /api/health`: salud del proceso.
 - `POST /api/sunat/id-cache`: diagnóstico de sesión.
 - `POST /api/sunat/sync/today`: sincronización manual.
+- `POST /api/sunat/sync/range`: intervalo inclusivo manual.
 - `POST /api/sunat/detracciones/hoy`: alias del anterior.
 
 Consulte [API](API.md), [configuración](CONFIGURATION.md), [base de datos](DATABASE.md) y [operación](OPERATIONS.md).

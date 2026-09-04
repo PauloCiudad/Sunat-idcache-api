@@ -2,6 +2,7 @@ import axios from "axios";
 
 import { env } from "../config/env.js";
 import { logger } from "../infrastructure/logger.js";
+import { queryDateTime } from "../infrastructure/datetime.js";
 
 const CONSULT_URL =
   "https://e-plataformaunica.sunat.gob.pe/v1/recaudacion/tributaria/" +
@@ -44,8 +45,8 @@ export class SunatClient {
 
     const rows = Array.isArray(payload?.resultado) ? payload.resultado : [];
     logger.info("sunat.detracciones.received", {
-      fechaInicio,
-      fechaFin,
+      fechaInicio: queryDateTime(fechaInicio),
+      fechaFin: queryDateTime(fechaFin),
       cod: payload?.cod,
       msg: payload?.msg || "",
       records: rows.length,

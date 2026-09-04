@@ -2,6 +2,7 @@ import oracledb from "oracledb";
 
 import { env } from "../config/env.js";
 import { getConnection } from "../config/database.js";
+import { logger } from "../infrastructure/logger.js";
 import { mapDetraccion } from "./detracciones.mapper.js";
 
 const COLUMNS = [
@@ -31,6 +32,11 @@ function bindDefs() {
 }
 
 export class DetraccionesRepository {
+  constructor({ connectionFactory = getConnection, schema = env.oracle.schema } = {}) {
+    this.connectionFactory = connectionFactory;
+    this.schema = schema;
+  }
+
   async insertMany(records) {
     if (!records.length) return 0;
 
@@ -48,22 +54,57 @@ export class DetraccionesRepository {
     }
 
     const binds = COLUMNS.map(column => `:${column}`).join(", ");
-    const sql = `INSERT INTO ${env.oracle.schema}.W_DETRACCIONES_AUTO (` +
+    const sql = `INSERT INTO ${this.schema}.W_DETRACCIONES_AUTO (` +
       `${COLUMNS.join(", ")}) VALUES (${binds})`;
 
-    const connection = await getConnection();
+    const connection = await this.connectionFactory();
+    let committing = false;
     try {
       const result = await connection.executeMany(sql, rows, {
         bindDefs: bindDefs(),
         autoCommit: false
       });
+      committing = true;
       await connection.commit();
       return result.rowsAffected || 0;
     } catch (error) {
-      await connection.rollback();
+      if (committing) {
+        // Si se pierde la respuesta del COMMIT, no sabemos si Oracle confirmó el lote.
+        error.retryable = false;
+        error.commitUncertain = true;
+      }
+      await connection.rollback().catch(rollbackError => {
+        error.retryable = false;
+        logger.error("oracle.insert.rollback.failed", { message: rollbackError.message });
+      });
       throw error;
     } finally {
-      await connection.close();
+      await this.#release(connection);
     }
+  }
+
+  async processAll() {
+    const connection = await this.connectionFactory();
+    try {
+      // El package procesa el lote, limpia WORK y hace su propio COMMIT/ROLLBACK.
+      // Esta llamada se realiza una sola vez y queda fuera del reintento de INSERT.
+      await connection.execute(
+        "BEGIN Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO; END;",
+        {},
+        { autoCommit: false }
+      );
+    } catch (error) {
+      error.retryable = false;
+      await connection.rollback().catch(() => undefined);
+      throw error;
+    } finally {
+      await this.#release(connection);
+    }
+  }
+
+  async #release(connection) {
+    await connection.close().catch(error => {
+      logger.error("oracle.connection.close.failed", { message: error.message });
+    });
   }
 }

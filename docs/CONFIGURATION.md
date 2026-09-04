@@ -19,18 +19,18 @@ La aplicación carga `.env` al iniciar. Copie `.env.ejemplo`, complete sus valor
 | `ORACLE_USER` | Sí | — | Usuario Oracle. |
 | `ORACLE_PASSWORD` | Sí | — | Contraseña Oracle. |
 | `ORACLE_CONNECT_STRING` | Sí | — | Ejemplo: `host:1521/servicio`. |
-| `ORACLE_SCHEMA` | No | `Z10` | Propietario de `W_DETRACCIONES_AUTO`. |
+| `ORACLE_SCHEMA` | No | `Z10` | Propietario de WORK. Debe ser `Z10` para el package integrado. |
 | `ORACLE_THICK_MODE` | No | `true` | Activa Thick mode, necesario para Native Network Encryption. |
 | `ORACLE_CLIENT_LIB_DIR` | Windows | — | Carpeta del Instant Client que contiene `oci.dll`. |
 | `ORACLE_CLIENT_CONFIG_DIR` | No | — | Carpeta opcional con `sqlnet.ora` o `tnsnames.ora`. |
 | `ORACLE_POOL_MIN` | No | `1` | Conexiones mínimas del pool. |
 | `ORACLE_POOL_MAX` | No | `5` | Conexiones máximas del pool. |
 | `ORACLE_POOL_INCREMENT` | No | `1` | Incremento del pool. |
-| `SYNC_CRON` | No | `0 2 * * *` | Expresión cron de la tarea diaria. |
+| `SYNC_CRON` | No | `0 5,16 * * *` | Ejecuciones a las 05:00 y 16:00. |
 | `SYNC_TIMEZONE` | No | `America/Lima` | Zona horaria del scheduler; la consulta predeterminada usa el día anterior. |
-| `SYNC_RETRIES` | No | `3` | Reintentos adicionales al intento inicial. |
+| `SYNC_RETRIES` | No | `3` | Reintentos de carga; de 0 a 8 para respetar `INTENTOS NUMBER(1)`. |
 
-`SYNC_RETRIES=3` permite hasta 4 intentos totales. Cada reintento vuelve a autenticar, consulta SUNAT e intenta insertar.
+`SYNC_RETRIES=3` permite hasta 4 intentos totales. Cada reintento vuelve a autenticar, consulta SUNAT e intenta insertar. El package y el log están fuera de este reintento, al igual que un COMMIT cuyo resultado no se pudo confirmar.
 
 ## Ejemplo
 
@@ -57,11 +57,11 @@ ORACLE_POOL_MIN=1
 ORACLE_POOL_MAX=5
 ORACLE_POOL_INCREMENT=1
 
-SYNC_CRON=0 2 * * *
+SYNC_CRON=0 5,16 * * *
 SYNC_TIMEZONE=America/Lima
 SYNC_RETRIES=3
 ```
 
 ## Validación al arrancar
 
-El servidor no inicia si falta una variable obligatoria, si el esquema Oracle no es un identificador válido o si no puede crear el pool Oracle. Así se evita dejar una API activa pero incapaz de persistir datos.
+El servidor no inicia si falta una variable obligatoria, si el esquema no es Z10, si no puede crear el pool Oracle o si no son visibles las columnas de `Z10.LOG_PROCESO_DETRACCIONES`. Así se evita dejar una API activa pero incapaz de registrar sus ejecuciones.

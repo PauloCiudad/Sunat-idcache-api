@@ -6,13 +6,13 @@ No es un error Oracle: significa que SUNAT devolvió `resultado` vacío y el rep
 
 Revise, en este orden:
 
-1. Ejecute la misma fecha manualmente con `{"date":"DD/MM/YYYY"}`.
+1. Compare `queryDate` con la fecha esperada: ayer en programadas, hoy en manuales.
 2. Busque el evento `sunat.detracciones.received` y confirme `cod`, `msg` y `records`.
 3. Verifique que la fecha tenga movimientos y que la cuenta corresponda a `tipoCuenta=1`.
 4. Confirme que la respuesta pertenece al RUC autenticado.
 5. Pruebe la consulta en SUNAT con la misma sesión.
 
-La tarea de las 02:00 consulta el día anterior en Lima. Si devuelve cero, compruebe que SUNAT tenga movimientos para esa fecha y que la sesión corresponda al RUC esperado.
+Las tareas de las 05:00 y 16:00 consultan el día anterior en Lima. Las manuales consultan hoy y pueden devolver cero si todavía no hay pagos. Una respuesta vacía se registra en el log sin ejecutar el package.
 
 ## SUNAT no respondió gestor-sesiones/recurso
 
@@ -62,9 +62,24 @@ Cada reintento crea una sesión SOL nueva.
 2. Si `inserted` es mayor que cero, ejecute `npm run db:check`.
 3. Compare `DB_NAME`, `SERVICE_NAME`, `SESSION_USER` y `CURRENT_SCHEMA` con su cliente SQL.
 4. Consulte `ORACLE_SCHEMA.W_DETRACCIONES_AUTO`, no una tabla homónima de otro esquema.
-5. Ordene por `fec_crea`, que Oracle completa con `SYSDATE`.
+5. Revise `Z10.DETRACCIONES_AUTO` y el log: el package limpia toda WORK después de transferir los datos, por lo que WORK vacía no significa que falló el INSERT.
 
 La aplicación hace `COMMIT` explícito después de `executeMany`.
+
+## Error al procesar el package o al guardar el log
+
+- `needsManualReview:true`: no relance la carga automáticamente; puede existir un INSERT confirmado o un COMMIT cuyo resultado sea incierto.
+- `processed:true` y `logSaved:false`: la carga y el package terminaron, pero falló sólo el log. Revise la existencia de `Z10.LOG_PROCESO_DETRACCIONES` y los permisos de INSERT.
+- Fallo de package: compruebe EXECUTE sobre `Z10.PKG_C01_DETRACCIONES` y el error del procedimiento. Los registros ya se cargaron a WORK.
+- `sync.log.failed`: si Oracle está caído, ni siquiera es posible guardar el error en la base. La causa original queda en consola y la respuesta agrega `logSaved:false`.
+
+El script de creación del log está en `sql/001_log_proceso_detracciones.sql`. No se ejecuta automáticamente.
+
+Si falta la tabla o sus columnas no son visibles, el servidor se detiene al arrancar, antes de activar el cron. El DBA debe crear la tabla (si no existe) y otorgar INSERT al usuario de la API.
+
+## HTTP 400 o 409 en llamadas manuales
+
+Las llamadas manuales consultan hoy. Si enviaba una fecha histórica, retire el campo `date`; otra fecha responde 400. Una solicitud que llega durante otra sincronización responde 409 en lugar de reutilizar un resultado con otra fecha o trigger.
 
 ## Errores ORA o NJS
 

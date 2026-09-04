@@ -23,7 +23,7 @@ try {
       `SELECT
          COUNT(*) AS total,
          COUNT(CASE WHEN TRUNC(fec_crea) = TRUNC(SYSDATE) THEN 1 END) AS today,
-         MAX(fec_crea) AS last_created_at
+         TO_CHAR(MAX(fec_crea), 'YYYY/MM/DD HH24:MI:SS') AS last_created_at
        FROM ${env.oracle.schema}.W_DETRACCIONES_AUTO`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }

@@ -34,7 +34,7 @@ export const env = Object.freeze({
     schema: process.env.ORACLE_SCHEMA || "Z10"
   },
   sync: {
-    cron: process.env.SYNC_CRON || "0 2 * * *",
+    cron: process.env.SYNC_CRON || "0 5,16 * * *",
     timezone: process.env.SYNC_TIMEZONE || "America/Lima",
     retries: integer(process.env.SYNC_RETRIES, 3)
   }
@@ -64,6 +64,10 @@ export function validateEnv() {
     throw new Error("ORACLE_SCHEMA contiene un identificador inválido");
   }
 
+  if (env.oracle.schema.toUpperCase() !== "Z10") {
+    throw new Error("ORACLE_SCHEMA debe ser Z10: PKG_C01_DETRACCIONES procesa la tabla WORK de ese esquema");
+  }
+
   if (
     env.oracle.poolMin < 0 ||
     env.oracle.poolMax < 1 ||
@@ -74,5 +78,9 @@ export function validateEnv() {
 
   if (env.oracle.poolMin > env.oracle.poolMax) {
     throw new Error("ORACLE_POOL_MIN no puede ser mayor que ORACLE_POOL_MAX");
+  }
+
+  if (env.sync.retries < 0 || env.sync.retries > 8) {
+    throw new Error("SYNC_RETRIES debe estar entre 0 y 8 (INTENTOS es NUMBER(1))");
   }
 }

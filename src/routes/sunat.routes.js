@@ -5,6 +5,7 @@ export function createSunatRoutes({ controller, limiter, requireApiKey }) {
   router.use(requireApiKey, limiter);
   router.post("/id-cache", controller.getIdCache);
   router.post("/sync/today", controller.syncToday);
+  router.post("/sync/range", controller.syncRange);
   router.post("/detracciones/hoy", controller.syncToday);
   return router;
 }

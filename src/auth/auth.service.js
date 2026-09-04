@@ -1,6 +1,7 @@
 import { env } from "../config/env.js";
 import { getBrowser } from "../infrastructure/browser.js";
 import { logger } from "../infrastructure/logger.js";
+import { formatDateTimePeru } from "../infrastructure/datetime.js";
 
 const RESOURCE_ENDPOINT =
   "https://e-plataformaunica.sunat.gob.pe/v1/gestor-sesiones/recurso";
@@ -131,10 +132,10 @@ export class AuthService {
       };
     } catch (error) {
       logger.error("sunat.auth.failed", { message: error.message });
-      const timestamp = Date.now();
+      const captureDate = formatDateTimePeru().replace(/[/: ]/g, "-");
       await Promise.all(context.pages().map((page, index) =>
         page.screenshot({
-          path: `error-id-cache-${timestamp}-pagina-${index + 1}.png`,
+          path: `error-id-cache-${captureDate}-pagina-${index + 1}.png`,
           fullPage: true
         }).catch(() => undefined)
       ));

@@ -8,9 +8,17 @@ export function createSunatController({ authService, syncService }) {
     },
     syncToday: async (req, res, next) => {
       try {
-        const result = req.body?.date
-          ? await syncService.syncDate(req.body.date, "manual")
-          : await syncService.syncPreviousDay("manual");
+        const result = await syncService.syncToday("manual", req.body?.date);
+        res.status(200).json(result);
+      } catch (error) { next(error); }
+    },
+    syncRange: async (req, res, next) => {
+      try {
+        const result = await syncService.syncRange(
+          req.body?.startDate,
+          req.body?.endDate,
+          "manual_range"
+        );
         res.status(200).json(result);
       } catch (error) { next(error); }
     }

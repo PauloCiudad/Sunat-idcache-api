@@ -29,7 +29,8 @@ test("coordina auth, consulta e insert", async () => {
         return { rows: [{ numPres: 1 }, { numPres: 2 }] };
       }
     },
-    repository: { insertMany: async rows => rows.length }
+    repository: { insertMany: async rows => rows.length, processAll: async () => {} },
+    logRepository: { insert: async () => {} }
   });
 
   const result = await service.syncPreviousDay("test");
@@ -40,7 +41,7 @@ test("coordina auth, consulta e insert", async () => {
   assert.equal(calls[0].cookieHeader, "sid=x");
 });
 
-test("permite indicar fecha en una sincronización manual", async () => {
+test("syncDate interno conserva la fecha de consulta indicada", async () => {
   let query;
   const service = new SyncService({
     authService: {
@@ -52,7 +53,8 @@ test("permite indicar fecha en una sincronización manual", async () => {
         return { rows: [] };
       }
     },
-    repository: { insertMany: async () => 0 }
+    repository: { insertMany: async () => 0 },
+    logRepository: { insert: async () => {} }
   });
 
   await service.syncDate("19/08/2026", "test");

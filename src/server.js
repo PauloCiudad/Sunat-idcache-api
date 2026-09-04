@@ -9,7 +9,13 @@ const { logger } = await import("./infrastructure/logger.js");
 const { startScheduler } = await import("./sync/scheduler.js");
 
 validateEnv();
-await initDatabase();
+try {
+  await initDatabase();
+  await container.logRepository.assertReady();
+} catch (error) {
+  await closeDatabase().catch(() => undefined);
+  throw error;
+}
 
 const app = createApp();
 const server = app.listen(env.port, "0.0.0.0", () => {

@@ -1,6 +1,8 @@
+import { formatDateTimePeru } from "./datetime.js";
+
 function write(level, event, details = {}) {
   const payload = {
-    timestamp: new Date().toISOString(),
+    loggedAt: formatDateTimePeru(),
     level,
     event,
     ...details

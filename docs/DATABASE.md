@@ -73,12 +73,59 @@ Al guardar identificadores en columnas `NUMBER`, sus ceros iniciales no se conse
 3. Si termina bien se hace `COMMIT`.
 4. Ante un error se hace `ROLLBACK` y se propaga al mecanismo de reintento.
 
-No existe `MERGE`, búsqueda previa ni clave de idempotencia. Repetir una fecha puede insertar duplicados.
+No existe `MERGE`, búsqueda previa ni clave de idempotencia en la carga a WORK. Repetir una fecha puede insertar duplicados en esa tabla.
+
+## Procesamiento posterior
+
+Tras confirmar un lote no vacío, la aplicación ejecuta una sola vez:
+
+```sql
+BEGIN
+  Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO;
+END;
+```
+
+Este procedimiento llama a `PRC_CARGAR_DETRACCIONES` y `PRC_DETRACCIONES_MICHELL`. Transfiere datos a las tablas definitivas, limpia **toda** `Z10.W_DETRACCIONES_AUTO` y hace su propio COMMIT/ROLLBACK. La API no modifica ese package ni instala un trigger por fila.
+
+`inserted` es la cantidad cargada a WORK antes de procesar, no el número de filas nuevas en las tablas finales. La lógica de filtrado de duplicados de las tablas finales pertenece al package. El proceso utiliza `Z10` explícitamente, por lo que `ORACLE_SCHEMA` debe coincidir.
+
+Si el package falla, el INSERT previo ya está confirmado: no se recarga automáticamente. Revise el estado de las tablas y el error antes de reprocesar. Tampoco se reintenta un COMMIT de INSERT cuyo resultado sea incierto.
+
+## Log de resultados
+
+Antes de usar esta versión, cree la tabla con [001_log_proceso_detracciones.sql](../sql/001_log_proceso_detracciones.sql). Si ya existe, compruebe sus columnas; no vuelva a ejecutar CREATE TABLE. La API no crea ni reemplaza tablas.
+
+| Columna | Valor |
+|---|---|
+| `OK` | `true` o `false`, como texto. |
+| `DIA` | `date` de la respuesta: fecha/hora de inicio en Lima. |
+| `TIPO_REGISTRO` | `manual` o `scheduled`. |
+| `RECIBIDOS` | Registros de la última consulta SUNAT. |
+| `INSERTADOS` | Filas confirmadas en WORK; NULL si se perdió la confirmación del COMMIT. |
+| `INTENTOS` | Intentos de carga; 0 si la ejecución fue rechazada antes de iniciar. |
+| `DURACION` | Milisegundos de carga/procesamiento, antes de escribir el log. |
+| `MENSAJE` | Resultado general, hasta 200 bytes UTF-8. |
+| `DETALLE` | Error técnico, fecha consultada o rango inicio-fin, hasta 300 bytes UTF-8. |
+
+La conversión usa `TO_DATE(:dia, 'YYYY/MM/DD HH24:MI:SS')`: conserva fecha y hora sin depender de la zona horaria del servidor ni del NLS de la sesión. `DATE` no almacena un formato de presentación; para visualizarlo:
+
+```sql
+SELECT OK, TO_CHAR(DIA, 'YYYY/MM/DD HH24:MI:SS') AS DIA,
+       TIPO_REGISTRO, RECIBIDOS, INSERTADOS, INTENTOS, DURACION, MENSAJE, DETALLE
+FROM Z10.LOG_PROCESO_DETRACCIONES
+ORDER BY DIA DESC;
+```
+
+Se guarda una fila final por ejecución, no una por reintento. La escritura del log es independiente del COMMIT del lote y del package. Si falla el log tras procesar, la API devuelve `processed:true`, `logSaved:false` y no repite los datos. Si Oracle está caído también puede fallar el registro del error: queda respaldo en consola.
+
+Las fechas de los datos originales de SUNAT no cambian de tipo: `fec_pago_desc` sigue siendo DATE y `fec_pago` permanece NUMBER según el contrato existente. El formato legible aplica a las fechas de respuesta y de auditoría.
 
 ## Permisos mínimos
 
 ```sql
 GRANT SELECT, INSERT ON {schema}.[TABLE] TO nombre_usuario;
+GRANT INSERT ON Z10.LOG_PROCESO_DETRACCIONES TO nombre_usuario;
+GRANT EXECUTE ON Z10.PKG_C01_DETRACCIONES TO nombre_usuario;
 ```
 
 ## Verificación
@@ -90,7 +137,7 @@ npm run db:check
 
 ```sql
 SELECT COUNT(*) AS total,
-       MAX(fec_crea) AS ultima_insercion
+       TO_CHAR(MAX(fec_crea), 'YYYY/MM/DD HH24:MI:SS') AS ultima_insercion
 FROM {schema}.[TABLE];
 
 SELECT *
@@ -100,4 +147,3 @@ FETCH FIRST 20 ROWS ONLY;
 ```
 
 Confirme que su cliente SQL apunta al mismo host, servicio y esquema configurados en `.env`.
-
