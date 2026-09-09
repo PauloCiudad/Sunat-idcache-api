@@ -102,7 +102,13 @@ Respuesta correcta típica:
   "received": 1,
   "inserted": 1,
   "attempts": 1,
-  "durationMs": 8432
+  "durationMs": 8432,
+  "package": {
+    "ok": true,
+    "executed": true,
+    "procedure": "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+    "message": "El package terminó correctamente"
+  }
 }
 ```
 

@@ -65,7 +65,13 @@ Si se envía `date`, debe coincidir con hoy en Lima, en `DD/MM/YYYY`. Las fechas
   "received": 8,
   "inserted": 8,
   "attempts": 1,
-  "durationMs": 9150
+  "durationMs": 9150,
+  "package": {
+    "ok": true,
+    "executed": true,
+    "procedure": "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+    "message": "El package terminó correctamente"
+  }
 }
 ```
 
@@ -76,6 +82,8 @@ Si se envía `date`, debe coincidir con hoy en Lima, en `DD/MM/YYYY`. Las fechas
 - `attempts`: intento que terminó correctamente.
 - `durationMs`: duración de la carga y del package, antes de la escritura del log, en milisegundos.
 - `trigger`: `manual` para HTTP o `scheduled` para el scheduler.
+
+- `package`: resultado del procedimiento. `executed:false` indica que no se llamó porque no hubo filas insertadas.
 
 ## POST /api/sunat/detracciones/hoy
 
@@ -114,13 +122,51 @@ Respuesta típica:
   "received": 64,
   "inserted": 64,
   "attempts": 1,
-  "durationMs": 15420
+  "durationMs": 15420,
+  "package": {
+    "ok": true,
+    "executed": true,
+    "procedure": "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+    "message": "El package terminó correctamente"
+  }
 }
 ```
 
 Para un intervalo se devuelven `queryStartDate` y `queryEndDate` en lugar de `queryDate`. La fila Oracle utiliza `TIPO_REGISTRO=manual_range` y guarda ambas fechas en `DETALLE`.
 
 ## Errores
+
+Si `PRC_PROCESAR_TODO` ejecuta un `RAISE`, la respuesta conserva el error en
+`package` incluso con `NODE_ENV=production`:
+
+```json
+{
+  "ok": false,
+  "date": "2026/09/04 10:00:00",
+  "queryDate": "2026/09/04 00:00:00",
+  "trigger": "manual",
+  "received": 8,
+  "inserted": 8,
+  "attempts": 1,
+  "durationMs": 9300,
+  "message": "El lote fue insertado, pero no se pudo confirmar el procesamiento del package",
+  "package": {
+    "ok": false,
+    "executed": true,
+    "procedure": "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+    "code": "ORA-20001",
+    "errorNum": 20001,
+    "offset": 12,
+    "message": "ORA-20001: mensaje generado por el package\nORA-06512: ..."
+  },
+  "needsManualReview": true
+}
+```
+
+El procedimiento actual no declara parámetros `OUT`: cuando termina bien,
+`package` confirma la ejecución; cuando falla, `package.message` contiene el
+texto completo entregado por Oracle. `code`, `errorNum` u `offset` pueden ser
+`null` si el driver no los proporciona.
 
 Una clave ausente o incorrecta recibe HTTP 401. Una sincronización concurrente recibe HTTP 409; no comparte el resultado de la ejecución activa. Los errores del flujo SUNAT u Oracle reciben HTTP 502:
 

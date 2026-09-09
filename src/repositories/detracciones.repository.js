@@ -5,6 +5,37 @@ import { getConnection } from "../config/database.js";
 import { logger } from "../infrastructure/logger.js";
 import { mapDetraccion } from "./detracciones.mapper.js";
 
+export const DETRACCIONES_PACKAGE_PROCEDURE =
+  "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO";
+
+function oracleErrorCode(error) {
+  if (typeof error?.code === "string" && error.code.trim()) return error.code.trim();
+  return String(error?.message || "").match(/\b(?:ORA-\d{5}|NJS-\d{3,5})\b/)?.[0] || null;
+}
+
+export function packageSuccessResult({ executed = true } = {}) {
+  return {
+    ok: true,
+    executed,
+    procedure: DETRACCIONES_PACKAGE_PROCEDURE,
+    message: executed
+      ? "El package terminó correctamente"
+      : "El package no se ejecutó porque no hubo filas insertadas"
+  };
+}
+
+export function packageFailureResult(error) {
+  return {
+    ok: false,
+    executed: true,
+    procedure: DETRACCIONES_PACKAGE_PROCEDURE,
+    code: oracleErrorCode(error),
+    errorNum: Number.isInteger(error?.errorNum) ? error.errorNum : null,
+    offset: Number.isInteger(error?.offset) ? error.offset : null,
+    message: error?.message || String(error)
+  };
+}
+
 const COLUMNS = [
   "num_press", "cod_usuario_sol", "des_prov", "cod_tipcomprobante",
   "num_ruc_proveedor", "per_tributario", "fec_pago_desc", "num_npd",
@@ -89,12 +120,14 @@ export class DetraccionesRepository {
       // El package procesa el lote, limpia WORK y hace su propio COMMIT/ROLLBACK.
       // Esta llamada se realiza una sola vez y queda fuera del reintento de INSERT.
       await connection.execute(
-        "BEGIN Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO; END;",
+        `BEGIN ${DETRACCIONES_PACKAGE_PROCEDURE}; END;`,
         {},
         { autoCommit: false }
       );
+      return packageSuccessResult();
     } catch (error) {
       error.retryable = false;
+      error.packageResult = packageFailureResult(error);
       await connection.rollback().catch(() => undefined);
       throw error;
     } finally {

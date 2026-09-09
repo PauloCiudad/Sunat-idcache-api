@@ -68,6 +68,12 @@ La aplicación hace `COMMIT` explícito después de `executeMany`.
 
 ## Error al procesar el package o al guardar el log
 
+Si falla `Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO`, revise en la respuesta
+HTTP `package.code`, `package.errorNum`, `package.offset` y `package.message`.
+El último campo conserva el texto completo del `RAISE` también en producción.
+Los registros ya fueron cargados a WORK, por lo que el resultado incluye
+`needsManualReview:true` y no debe relanzarse automáticamente.
+
 - `needsManualReview:true`: no relance la carga automáticamente; puede existir un INSERT confirmado o un COMMIT cuyo resultado sea incierto.
 - `processed:true` y `logSaved:false`: la carga y el package terminaron, pero falló sólo el log. Revise la existencia de `Z10.LOG_PROCESO_DETRACCIONES` y los permisos de INSERT.
 - Fallo de package: compruebe EXECUTE sobre `Z10.PKG_C01_DETRACCIONES` y el error del procedimiento. Los registros ya se cargaron a WORK.

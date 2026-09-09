@@ -4,7 +4,7 @@ import { formatDateTimePeru, previousDatePeru, queryDateTime } from "../src/infr
 import { logger } from "../src/infrastructure/logger.js";
 import { startScheduler } from "../src/sync/scheduler.js";
 import { createSunatController } from "../src/controllers/sunat.controller.js";
-import { errorHandler } from "../src/middleware/error-handler.js";
+import { errorHandler, publicErrorResult } from "../src/middleware/error-handler.js";
 import { SyncError } from "../src/sync/sync.error.js";
 import { withRetry } from "../src/infrastructure/retry.js";
 
@@ -105,6 +105,26 @@ test("error HTTP genérico también incluye fecha hora de Lima y contexto", () =
   assert.equal(res.body.date, "2026/09/04 10:22:03");
   assert.equal(res.body.trigger, "manual");
   assert.equal(typeof res.body.durationMs, "number");
+});
+
+test("produccion oculta detail pero conserva el RAISE del package", () => {
+  const responseBody = publicErrorResult({
+    ok: false,
+    detail: "detalle tecnico duplicado",
+    logDetail: "error del log",
+    package: {
+      ok: false,
+      executed: true,
+      procedure: "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+      code: "ORA-20001",
+      errorNum: 20001,
+      offset: 12,
+      message: "ORA-20001: validacion del package"
+    }
+  }, "production");
+  assert.equal(responseBody.detail, undefined);
+  assert.equal(responseBody.logDetail, undefined);
+  assert.equal(responseBody.package.message, "ORA-20001: validacion del package");
 });
 
 test("retry respeta operaciones marcadas como no reintentables", async () => {

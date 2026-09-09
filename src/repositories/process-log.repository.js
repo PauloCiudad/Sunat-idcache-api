@@ -29,7 +29,7 @@ export function mapProcessLog(result) {
     intentos: result.attempts,
     duracion: result.durationMs,
     mensaje: truncateBytes(result.message || "Proceso completado correctamente", 200),
-    detalle: truncateBytes(result.detail || queryDetail, 300)
+    detalle: truncateBytes(result.detail || queryDetail || result.package?.message, 300)
   };
 }
 

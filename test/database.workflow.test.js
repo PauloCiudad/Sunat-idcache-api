@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DetraccionesRepository } from "../src/repositories/detracciones.repository.js";
+import {
+  DetraccionesRepository, DETRACCIONES_PACKAGE_PROCEDURE
+} from "../src/repositories/detracciones.repository.js";
 import { mapProcessLog, ProcessLogRepository } from "../src/repositories/process-log.repository.js";
 
 function connectionFixture(overrides = {}) {
@@ -25,7 +27,7 @@ test("mantiene INSERT normal y su COMMIT antes de llamar al package", async () =
   const { calls, connectionFactory } = connectionFixture();
   const repo = new DetraccionesRepository({ connectionFactory });
   assert.equal(await repo.insertMany([{ num_pres: 1 }]), 1);
-  await repo.processAll();
+  const packageResult = await repo.processAll();
   assert.deepEqual(calls.map(([event]) => event), ["executeMany", "commit", "close", "execute", "close"]);
   assert.match(calls[0][1], /^INSERT INTO .*W_DETRACCIONES_AUTO/);
   assert.ok(!calls[0][1].includes("usr_crea"));
@@ -33,6 +35,12 @@ test("mantiene INSERT normal y su COMMIT antes de llamar al package", async () =
   assert.equal(calls[0][3].autoCommit, false);
   assert.equal(calls[3][1], "BEGIN Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO; END;");
   assert.equal(calls[3][3].autoCommit, false);
+  assert.deepEqual(packageResult, {
+    ok: true,
+    executed: true,
+    procedure: DETRACCIONES_PACKAGE_PROCEDURE,
+    message: "El package terminó correctamente"
+  });
 });
 
 test("fallo de INSERT revierte antes de liberar la conexión", async () => {
@@ -67,11 +75,28 @@ test("fallo al cerrar tras COMMIT no hace fallar una carga confirmada", async ()
 
 test("fallo del package conserva error original aunque falle rollback", async () => {
   const { connectionFactory } = connectionFixture({
-    execute: async () => { throw new Error("fallo package"); },
+    execute: async () => {
+      throw Object.assign(new Error("ORA-20001: fallo package"), {
+        code: "ORA-20001", errorNum: 20001, offset: 7
+      });
+    },
     rollback: async () => { throw new Error("fallo rollback"); }
   });
   const repo = new DetraccionesRepository({ connectionFactory });
-  await assert.rejects(repo.processAll(), /fallo package/);
+  await assert.rejects(repo.processAll(), error => {
+    assert.match(error.message, /fallo package/);
+    assert.equal(error.retryable, false);
+    assert.deepEqual(error.packageResult, {
+      ok: false,
+      executed: true,
+      procedure: DETRACCIONES_PACKAGE_PROCEDURE,
+      code: "ORA-20001",
+      errorNum: 20001,
+      offset: 7,
+      message: "ORA-20001: fallo package"
+    });
+    return true;
+  });
 });
 
 test("log guarda fecha y hora con TO_DATE explícito y un COMMIT independiente", async () => {

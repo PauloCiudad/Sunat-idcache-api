@@ -4,6 +4,9 @@ import { withRetry } from "../infrastructure/retry.js";
 import {
   currentDatePeru, previousDatePeru, formatDateTimePeru, queryDateTime
 } from "../infrastructure/datetime.js";
+import {
+  packageFailureResult, packageSuccessResult
+} from "../repositories/detracciones.repository.js";
 import { SyncError } from "./sync.error.js";
 
 export { currentDatePeru, previousDatePeru } from "../infrastructure/datetime.js";
@@ -103,6 +106,7 @@ export class SyncService {
     let phase = "load";
     let result;
     let cause;
+    let packageResult = packageSuccessResult({ executed: false });
 
     try {
       await withRetry(async attempt => {
@@ -131,12 +135,13 @@ export class SyncService {
       phase = "process";
       if (counters.inserted > 0) {
         logger.info("sync.package.started", context);
-        await this.repository.processAll();
-        logger.info("sync.package.completed", context);
+        packageResult = await this.repository.processAll() || packageSuccessResult();
+        logger.info("sync.package.completed", { ...context, package: packageResult });
       }
       result = {
         ok: true,
-        ...this.#result(startDate, endDate, trigger, startedAt, counters)
+        ...this.#result(startDate, endDate, trigger, startedAt, counters),
+        package: packageResult
       };
     } catch (error) {
       cause = error;
@@ -149,6 +154,9 @@ export class SyncService {
           : "No se pudo completar la operación",
         detail: error.message
       };
+      if (phase === "process") {
+        result.package = error.packageResult || packageFailureResult(error);
+      }
       if (phase === "process" || error.commitUncertain) {
         result.needsManualReview = true;
       }

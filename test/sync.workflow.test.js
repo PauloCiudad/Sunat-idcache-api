@@ -3,6 +3,13 @@ import test from "node:test";
 import { SyncService } from "../src/sync/sync.service.js";
 import { SyncError } from "../src/sync/sync.error.js";
 
+const PACKAGE_OK = {
+  ok: true,
+  executed: true,
+  procedure: "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+  message: "El package terminó correctamente"
+};
+
 function fixture(overrides = {}) {
   const events = [];
   const logs = [];
@@ -21,7 +28,7 @@ function fixture(overrides = {}) {
     } },
     repository: {
       insertMany: async rows => { events.push("insert"); return rows.length; },
-      processAll: async () => { events.push("package"); }
+      processAll: async () => { events.push("package"); return { ...PACKAGE_OK }; }
     },
     logRepository: { insert: async result => { events.push("log"); logs.push(result); } },
     ...overrides
@@ -37,7 +44,8 @@ test("manual consulta hoy y guarda el log después del package", async () => {
   assert.equal(queries[0].fechaFin, "04/09/2026");
   assert.deepEqual(result, {
     ok: true, date: "2026/09/04 09:05:06", queryDate: "2026/09/04 00:00:00",
-    trigger: "manual", received: 1, inserted: 1, attempts: 1, durationMs: 0
+    trigger: "manual", received: 1, inserted: 1, attempts: 1, durationMs: 0,
+    package: PACKAGE_OK
   });
   assert.deepEqual(logs, [result]);
 });
@@ -61,6 +69,12 @@ test("sin filas registra éxito sin ejecutar el package que limpia WORK", async 
   assert.equal(result.inserted, 0);
   assert.equal(result.received, 0);
   assert.ok(!events.includes("package"));
+  assert.deepEqual(result.package, {
+    ok: true,
+    executed: false,
+    procedure: "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+    message: "El package no se ejecutó porque no hubo filas insertadas"
+  });
   assert.equal(logs.length, 1);
 });
 
@@ -105,13 +119,29 @@ test("fallo del package no repite el INSERT ya confirmado", async () => {
   let packages = 0;
   const { service, logs } = fixture({ repository: {
     insertMany: async () => { inserts += 1; return 1; },
-    processAll: async () => { packages += 1; throw new Error("ORA-20001: fallo de proceso"); }
+    processAll: async () => {
+      packages += 1;
+      throw Object.assign(new Error("ORA-20001: fallo de proceso\nORA-06512: en linea 42"), {
+        code: "ORA-20001",
+        errorNum: 20001,
+        offset: 12
+      });
+    }
   } });
   await assert.rejects(service.syncToday(), error => {
     assert.equal(error.result.inserted, 1);
     assert.equal(error.result.attempts, 1);
     assert.equal(error.result.needsManualReview, true);
     assert.match(error.result.detail, /ORA-20001/);
+    assert.deepEqual(error.result.package, {
+      ok: false,
+      executed: true,
+      procedure: "Z10.PKG_C01_DETRACCIONES.PRC_PROCESAR_TODO",
+      code: "ORA-20001",
+      errorNum: 20001,
+      offset: 12,
+      message: "ORA-20001: fallo de proceso\nORA-06512: en linea 42"
+    });
     return true;
   });
   assert.equal(inserts, 1);
