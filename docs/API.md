@@ -12,6 +12,21 @@ x-api-key: valor-de-API_KEY
 
 El límite es de 5 solicitudes por minuto y por IP. `GET /api/health` es público y no está sujeto a ese límite.
 
+## CORS
+
+Los clientes web deben estar incluidos en `CORS_ORIGINS`. La variable acepta
+orígenes separados por comas, incluyendo esquema y puerto cuando corresponda:
+
+```env
+CORS_ORIGINS=https://app.ejemplo.pe,http://localhost:5173
+```
+
+El preflight `OPTIONS` permite los métodos `GET`, `POST` y `OPTIONS`, además de
+los headers `Content-Type` y `X-API-Key`. Las llamadas de scripts o servicios
+que no envían `Origin` continúan funcionando. Un origen web no autorizado
+recibe HTTP 403. El valor `*` se admite explícitamente, pero no debe utilizarse
+en producción.
+
 ## GET /api/health
 
 Informa si el proceso HTTP está activo. No verifica en cada llamada la sesión SOL ni ejecuta una consulta Oracle.

@@ -1,5 +1,12 @@
 # Seguridad
 
+## CORS
+
+Configure `CORS_ORIGINS` con los orígenes exactos de las aplicaciones web que
+consumirán la API. No incluya rutas ni slash final. Evite `*` en producción:
+CORS controla qué páginas pueden leer la respuesta desde un navegador, pero no
+reemplaza `x-api-key`, el firewall ni TLS.
+
 El servicio maneja credenciales SOL, credenciales Oracle, cookies de sesión e `idCache`. Todos deben tratarse como secretos.
 
 ## Reglas operativas
@@ -23,4 +30,3 @@ git check-ignore .env
 ```
 
 El repositorio sólo debe contener `.env.ejemplo` con valores ficticios.
-

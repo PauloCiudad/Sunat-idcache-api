@@ -4,6 +4,10 @@ Servicio Node.js que inicia sesión en SUNAT con Clave SOL, obtiene el `idCache`
 
 La sincronización se ejecuta automáticamente a las 05:00 y 16:00, hora de Lima, y también puede iniciarse mediante una API HTTP protegida con `x-api-key`.
 
+Para consumirla desde un navegador, configure `CORS_ORIGINS` con los orígenes
+permitidos separados por comas, por ejemplo
+`https://app.ejemplo.pe,http://localhost:5173`.
+
 ## Flujo principal
 
 ```text

@@ -8,6 +8,7 @@ La aplicación carga `.env` al iniciar. Copie `.env.ejemplo`, complete sus valor
 |---|---:|---|---|
 | `NODE_ENV` | No | `development` | Use `production` para ocultar detalles técnicos HTTP. |
 | `PORT` | No | `4000` | Puerto de la API. |
+| `CORS_ORIGINS` | No | vacío | Orígenes web permitidos, separados por comas. Use esquema, host y puerto exactos, sin rutas. |
 | `API_KEY` | Sí | — | Protege todos los endpoints POST. |
 | `SUNAT_TRAMITE_URL` | Sí | — | Página de gob.pe cuyo enlace inicia el trámite SOL. |
 | `SUNAT_RUC` | Sí | — | RUC usado en el login. |
@@ -38,6 +39,7 @@ La aplicación carga `.env` al iniciar. Copie `.env.ejemplo`, complete sus valor
 NODE_ENV=production
 PORT=4000
 API_KEY=cambie-este-valor
+CORS_ORIGINS=https://app.ejemplo.pe
 
 SUNAT_TRAMITE_URL=https://www.gob.pe/1144-declaracion-y-pago-de-impuestos-a-sunat-personas-naturales-declarar-y-pagar-rentas-de-cuarta-categoria
 SUNAT_RUC=20123456789

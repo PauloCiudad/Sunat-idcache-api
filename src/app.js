@@ -4,6 +4,7 @@ import helmet from "helmet";
 
 import { container } from "./container.js";
 import { requireApiKey } from "./middleware/api-key.js";
+import { createCorsMiddleware } from "./middleware/cors.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { createSunatRoutes } from "./routes/sunat.routes.js";
 import { formatDateTimePeru } from "./infrastructure/datetime.js";
@@ -12,6 +13,7 @@ export function createApp() {
   const app = express();
   app.disable("x-powered-by");
   app.use(helmet());
+  app.use(createCorsMiddleware());
   app.use((req, res, next) => {
     req.requestStartedAt = new Date();
     next();

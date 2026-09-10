@@ -8,10 +8,18 @@ const boolean = (value, fallback) => {
   return value.toLowerCase() === "true";
 };
 
+const csv = value => String(value || "")
+  .split(",")
+  .map(item => item.trim())
+  .filter(Boolean);
+
 export const env = Object.freeze({
   nodeEnv: process.env.NODE_ENV || "development",
   port: integer(process.env.PORT, 4000),
   apiKey: process.env.API_KEY,
+  cors: {
+    origins: csv(process.env.CORS_ORIGINS)
+  },
   sunat: {
     tramiteUrl: process.env.SUNAT_TRAMITE_URL,
     ruc: process.env.SUNAT_RUC,
@@ -82,5 +90,20 @@ export function validateEnv() {
 
   if (env.sync.retries < 0 || env.sync.retries > 8) {
     throw new Error("SYNC_RETRIES debe estar entre 0 y 8 (INTENTOS es NUMBER(1))");
+  }
+
+  for (const origin of env.cors.origins) {
+    if (origin === "*") continue;
+    try {
+      const url = new URL(origin);
+      if (!["http:", "https:"].includes(url.protocol) || url.origin !== origin) {
+        throw new Error();
+      }
+    } catch {
+      throw new Error(
+        `CORS_ORIGINS contiene un origen inválido: ${origin}. ` +
+        "Use esquema, host y puerto sin ruta ni slash final."
+      );
+    }
   }
 }
